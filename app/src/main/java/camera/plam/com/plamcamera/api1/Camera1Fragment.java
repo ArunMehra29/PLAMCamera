@@ -49,6 +49,7 @@ public class Camera1Fragment extends Fragment {
 
     private CameraUtils.CameraFlashState mCameraFlashState;
     private Bitmap mBitmap;
+    private CameraUtils.ScreenOrientation mCurrentOrientation;
 
     public static Camera1Fragment getCamera1FragmentInstance() {
         Camera1Fragment fragment = new Camera1Fragment();
@@ -66,10 +67,9 @@ public class Camera1Fragment extends Fragment {
         mOrientationListener = new OrientationEventListener(getActivity()) {
             @Override
             public void onOrientationChanged(int orientation) {
-//                CameraUtils.getOrientation(orientation);
-//                if (null != CameraUtils.getOrientation(orientation)) {
-//                    Log.d(LOG_TAG, CameraUtils.getOrientation(orientation).name());
-//                }
+                if (null != CameraUtils.getOrientation(orientation)) {
+                    mCurrentOrientation = CameraUtils.getOrientation(orientation);
+                }
             }
         };
         mOrientationListener.enable();
@@ -261,14 +261,31 @@ public class Camera1Fragment extends Fragment {
                 Camera.CameraInfo info = new Camera.CameraInfo();
                 Camera.getCameraInfo(CameraUtils.mCurrentCameraId, info);
                 Matrix matrix = new Matrix();
-
                 //this is for reverse landscape for phones like Nexus 5X.
-                if (info.orientation == 270) {
-                    matrix.postRotate(-90);
+                int rotationValue;
+                if (info.orientation == CameraUtils.DEGREE_TWO_SEVENTY) {
+                    rotationValue = -CameraUtils.DEGREE_NINETY;
                 } else {
-                    matrix.postRotate(90);
+                    rotationValue = CameraUtils.DEGREE_NINETY;
                 }
-                mBitmap = Bitmap.createBitmap(mBitmap, 0, 0, mBitmap.getWidth(), mBitmap.getHeight(), matrix, false);
+                switch (mCurrentOrientation) {
+                    case LEFT_LANDSCAPE: {
+                        rotationValue -= CameraUtils.DEGREE_NINETY;
+                        break;
+                    }
+                    case RIGHT_LANDSCAPE: {
+                        rotationValue += CameraUtils.DEGREE_NINETY;
+                        break;
+                    }
+                    case PORTRAIT_UPSIDE_DOWN: {
+                        rotationValue += CameraUtils.DEGREE_ONE_EIGHTY;
+                        break;
+                    }
+                }
+                if (rotationValue != 0) {
+                    matrix.postRotate(rotationValue);
+                    mBitmap = Bitmap.createBitmap(mBitmap, 0, 0, mBitmap.getWidth(), mBitmap.getHeight(), matrix, false);
+                }
                 return true;
             }
             return false;

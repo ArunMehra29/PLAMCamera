@@ -29,9 +29,13 @@ public class CameraUtils {
     public static final int IMAGE_QUALITY = 100;
 
     public static final int DEGREE_ZERO = 0;
+    public static final int DEGREE_FORTY_FIVE = 45;
     public static final int DEGREE_NINETY = 90;
+    public static final int DEGREE_ONE_THIRTY_FIVE = 135;
     public static final int DEGREE_ONE_EIGHTY = 180;
+    public static final int DEGREE_TWO_TWENTY_FIVE = 225;
     public static final int DEGREE_TWO_SEVENTY = 270;
+    public static final int DEGREE_THREE_ONE_FIVE = 315;
     public static final int DEGREE_THREE_SIXTY = 360;
 
     public static int mCurrentCameraId;
@@ -187,13 +191,14 @@ public class CameraUtils {
     }
 
     public static ScreenOrientation getOrientation(int orientationValue) {
-        if (DEGREE_ZERO <= orientationValue && DEGREE_NINETY > orientationValue) {
+        if ((DEGREE_ZERO <= orientationValue && orientationValue < DEGREE_FORTY_FIVE) ||
+                (orientationValue >= DEGREE_THREE_ONE_FIVE && orientationValue < DEGREE_THREE_SIXTY)) {
             return ScreenOrientation.PORTRAIT;
-        } else if (DEGREE_NINETY <= orientationValue && DEGREE_ONE_EIGHTY > orientationValue) {
+        } else if ((orientationValue >= DEGREE_FORTY_FIVE && orientationValue < DEGREE_ONE_THIRTY_FIVE)) {
             return ScreenOrientation.RIGHT_LANDSCAPE;
-        } else if (DEGREE_ONE_EIGHTY <= orientationValue && DEGREE_TWO_SEVENTY > orientationValue) {
+        } else if ((orientationValue >= DEGREE_ONE_THIRTY_FIVE && orientationValue < DEGREE_TWO_TWENTY_FIVE)) {
             return ScreenOrientation.PORTRAIT_UPSIDE_DOWN;
-        } else if (DEGREE_TWO_SEVENTY <= orientationValue && DEGREE_THREE_SIXTY > orientationValue) {
+        } else if ((orientationValue >= DEGREE_TWO_TWENTY_FIVE && orientationValue < DEGREE_THREE_ONE_FIVE)) {
             return ScreenOrientation.LEFT_LANDSCAPE;
         }
         return null;
