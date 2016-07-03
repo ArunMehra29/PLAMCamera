@@ -93,6 +93,13 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
                 break;
             }
         }
+        if (null == result) {
+            for (Camera.Size size : parameters.getSupportedPreviewSizes()) {
+                if (size.height > width) {
+                    result = size;
+                }
+            }
+        }
         return(result);
     }
 

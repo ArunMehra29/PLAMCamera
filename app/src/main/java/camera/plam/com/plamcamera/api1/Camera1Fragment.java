@@ -118,10 +118,6 @@ public class Camera1Fragment extends Fragment {
                     setCameraFlashOff();
                     break;
                 }
-                case AUTO: {
-                    setCameraFlashAuto();
-                    break;
-                }
             }
         }
     };
@@ -129,6 +125,7 @@ public class Camera1Fragment extends Fragment {
     View.OnClickListener captureImageListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
+            manuallyTurnOnFlash();
             mCamera.setPreviewCallback(new Camera.PreviewCallback() {
                 @Override
                 public void onPreviewFrame(byte[] data, Camera camera) {
@@ -138,10 +135,27 @@ public class Camera1Fragment extends Fragment {
                         restartCamera();
                     }
                     mCamera.setPreviewCallback(null);
+                    manuallyTurnOffFlash();
                 }
             });
         }
     };
+
+    private void manuallyTurnOffFlash() {
+        if (mCameraFlashState.ordinal() == CameraUtils.CameraFlashState.ON.ordinal()) {
+            Camera.Parameters parameters = mCamera.getParameters();
+            parameters.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
+            mCamera.setParameters(parameters);
+        }
+    }
+
+    private void manuallyTurnOnFlash() {
+        if (mCameraFlashState.ordinal() == CameraUtils.CameraFlashState.ON.ordinal()) {
+            Camera.Parameters parameters = mCamera.getParameters();
+            parameters.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+            mCamera.setParameters(parameters);
+        }
+    }
 
     View.OnClickListener onCapturedImageClicked = new View.OnClickListener() {
         @Override

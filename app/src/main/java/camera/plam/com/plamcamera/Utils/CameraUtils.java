@@ -173,8 +173,7 @@ public class CameraUtils {
 
     public enum CameraFlashState {
         ON,
-        OFF,
-        AUTO;
+        OFF;
 
         private static CameraFlashState[] val = values();
 
