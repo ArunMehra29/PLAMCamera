@@ -2,12 +2,11 @@ package camera.plam.com.plamcamera;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
 import camera.plam.com.plamcamera.api1.Camera1Activity;
 
-public class CaptureImageActivity extends AppCompatActivity {
+public class CaptureImageActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

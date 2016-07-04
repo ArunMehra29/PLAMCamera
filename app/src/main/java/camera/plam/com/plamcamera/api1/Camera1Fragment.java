@@ -1,6 +1,7 @@
 package camera.plam.com.plamcamera.api1;
 
 import android.app.Fragment;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
@@ -114,6 +115,12 @@ public class Camera1Fragment extends Fragment {
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        CameraUtils.setCameraRotation(getActivity(), CameraUtils.mCurrentCameraId);
+        super.onConfigurationChanged(newConfig);
     }
 
     View.OnClickListener cameraFlashListener = new View.OnClickListener() {
