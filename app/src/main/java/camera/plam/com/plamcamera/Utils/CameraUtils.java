@@ -38,7 +38,7 @@ public class CameraUtils {
     public static final int DEGREE_THREE_ONE_FIVE = 315;
     public static final int DEGREE_THREE_SIXTY = 360;
 
-    public static int mCurrentCameraId;
+    public static int mCurrentCameraId = -1;
 
     private static Camera mCamera;
 

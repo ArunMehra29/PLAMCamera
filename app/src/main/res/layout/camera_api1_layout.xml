@@ -19,8 +19,8 @@
 
         <ImageButton
             android:id="@+id/camera_flash_image_button"
-            android:layout_width="@dimen/flash_button_wh"
-            android:layout_height="@dimen/flash_button_wh"
+            android:layout_width="@dimen/camera_action_wh"
+            android:layout_height="@dimen/camera_action_wh"
             android:layout_alignParentRight="true"
             android:layout_centerVertical="true"
             android:layout_marginRight="@dimen/margin16"
@@ -36,6 +36,17 @@
             android:background="?android:attr/selectableItemBackground"
             android:scaleType="center"
             android:src="@drawable/ic_camera_white_48dp" />
+
+        <ImageButton
+            android:id="@+id/switch_camera_image_button"
+            android:layout_width="@dimen/camera_action_wh"
+            android:layout_height="@dimen/camera_action_wh"
+            android:layout_alignParentLeft="true"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="@dimen/margin16"
+            android:background="?android:attr/selectableItemBackground"
+            android:scaleType="center"
+            android:src="@drawable/ic_camera_front_white_24dp" />
 
     </RelativeLayout>
 

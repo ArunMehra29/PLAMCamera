@@ -42,6 +42,7 @@ public class Camera1Fragment extends Fragment {
     private RelativeLayout mCameraActionsLayout;
     private ImageButton mCameraFlashImageButton;
     private ImageButton mCameraCaptureImageButton;
+    private ImageButton mSwitchCameraImageButton;
     private ImageView mCapturedImageView;
 
     private ICameraIO mCameraIOListener;
@@ -62,7 +63,11 @@ public class Camera1Fragment extends Fragment {
         if (null != mCamera) {
             mCamera.startPreview();
         } else {
-            startCamera(Camera.CameraInfo.CAMERA_FACING_BACK);
+            if (CameraUtils.mCurrentCameraId == -1) {
+                startCamera(Camera.CameraInfo.CAMERA_FACING_BACK);
+            } else {
+                startCamera(CameraUtils.mCurrentCameraId);
+            }
         }
         mOrientationListener = new OrientationEventListener(getActivity()) {
             @Override
@@ -87,16 +92,22 @@ public class Camera1Fragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.camera_api1_layout, container, false);
+
+        //reference views
         mCameraPreviewContainer = (FrameLayout) view.findViewById(R.id.camera_preview_container);
         mCameraFlashImageButton = (ImageButton) view.findViewById(R.id.camera_flash_image_button);
-        mCameraFlashImageButton.setOnClickListener(cameraFlashListener);
         mCameraCaptureImageButton = (ImageButton) view.findViewById(R.id.capture_camera_image_button);
-        mCameraCaptureImageButton.setOnClickListener(captureImageListener);
+        mSwitchCameraImageButton = (ImageButton) view.findViewById(R.id.switch_camera_image_button);
         mCapturedImageView = (ImageView) view.findViewById(R.id.captured_image_view);
-        mCapturedImageView.setOnClickListener(onCapturedImageClicked);
+        mCameraActionsLayout = (RelativeLayout) view.findViewById(R.id.camera_action_layout);
         mImagePreviewLayout = (RelativeLayout) view.findViewById(R.id.image_preview_layout);
         mImagePreviewLayout.setVisibility(View.GONE);
-        mCameraActionsLayout = (RelativeLayout) view.findViewById(R.id.camera_action_layout);
+
+        //click listeners
+        mCapturedImageView.setOnClickListener(capturedImageClicked);
+        mCameraFlashImageButton.setOnClickListener(cameraFlashListener);
+        mCameraCaptureImageButton.setOnClickListener(captureImageListener);
+        mSwitchCameraImageButton.setOnClickListener(switchCameraListener);
         return view;
     }
 
@@ -122,6 +133,17 @@ public class Camera1Fragment extends Fragment {
         }
     };
 
+    View.OnClickListener switchCameraListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            if (CameraUtils.mCurrentCameraId == Camera.CameraInfo.CAMERA_FACING_BACK) {
+                startFrontCamera();
+            } else {
+                startBackCamera();
+            }
+        }
+    };
+
     View.OnClickListener captureImageListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
@@ -130,7 +152,8 @@ public class Camera1Fragment extends Fragment {
                 @Override
                 public void onPreviewFrame(byte[] data, Camera camera) {
                     if (null != data) {
-                        new LoadImageTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, data);
+                        new LoadImageTask(mCurrentOrientation).
+                                executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, data);
                     } else {
                         restartCamera();
                     }
@@ -140,6 +163,18 @@ public class Camera1Fragment extends Fragment {
             });
         }
     };
+
+    private void startBackCamera() {
+        mSwitchCameraImageButton.setImageDrawable(ContextCompat.
+                getDrawable(getActivity(), R.drawable.ic_camera_front_white_24dp));
+        startCamera(Camera.CameraInfo.CAMERA_FACING_BACK);
+    }
+
+    private void startFrontCamera() {
+        mSwitchCameraImageButton.setImageDrawable(ContextCompat.
+                getDrawable(getActivity(), R.drawable.ic_camera_rear_white_24dp));
+        startCamera(Camera.CameraInfo.CAMERA_FACING_FRONT);
+    }
 
     private void manuallyTurnOffFlash() {
         if (mCameraFlashState.ordinal() == CameraUtils.CameraFlashState.ON.ordinal()) {
@@ -157,7 +192,7 @@ public class Camera1Fragment extends Fragment {
         }
     }
 
-    View.OnClickListener onCapturedImageClicked = new View.OnClickListener() {
+    View.OnClickListener capturedImageClicked = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
             //do nothing here
@@ -177,14 +212,6 @@ public class Camera1Fragment extends Fragment {
                 ContextCompat.getDrawable(getActivity(), R.drawable.ic_flash_on_white_24dp));
         Camera.Parameters params = mCamera.getParameters();
         params.setFlashMode(Camera.Parameters.FLASH_MODE_ON);
-        mCamera.setParameters(params);
-    }
-
-    private void setCameraFlashAuto() {
-        mCameraFlashImageButton.setImageDrawable(
-                ContextCompat.getDrawable(getActivity(), R.drawable.ic_flash_auto_white_24dp));
-        Camera.Parameters params = mCamera.getParameters();
-        params.setFlashMode(Camera.Parameters.FLASH_MODE_AUTO);
         mCamera.setParameters(params);
     }
 
@@ -258,6 +285,16 @@ public class Camera1Fragment extends Fragment {
     }
 
     private class LoadImageTask extends AsyncTask<byte[], Void, Boolean> {
+
+        CameraUtils.ScreenOrientation screenOrientation;
+        Camera.CameraInfo info;
+
+        public LoadImageTask(CameraUtils.ScreenOrientation orientation) {
+            this.screenOrientation = orientation;
+            info = new Camera.CameraInfo();
+            Camera.getCameraInfo(CameraUtils.mCurrentCameraId, info);
+        }
+
         @Override
         protected Boolean doInBackground(byte[]... params) {
             byte[] data = params[0];
@@ -272,33 +309,15 @@ public class Camera1Fragment extends Fragment {
                 img.compressToJpeg(rect, 100, BAOS);
                 byte[] bytes = BAOS.toByteArray();
                 mBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                Camera.CameraInfo info = new Camera.CameraInfo();
-                Camera.getCameraInfo(CameraUtils.mCurrentCameraId, info);
+
                 Matrix matrix = new Matrix();
-                //this is for reverse landscape for phones like Nexus 5X.
-                int rotationValue;
-                if (info.orientation == CameraUtils.DEGREE_TWO_SEVENTY) {
-                    rotationValue = -CameraUtils.DEGREE_NINETY;
-                } else {
-                    rotationValue = CameraUtils.DEGREE_NINETY;
-                }
-                switch (mCurrentOrientation) {
-                    case LEFT_LANDSCAPE: {
-                        rotationValue -= CameraUtils.DEGREE_NINETY;
-                        break;
-                    }
-                    case RIGHT_LANDSCAPE: {
-                        rotationValue += CameraUtils.DEGREE_NINETY;
-                        break;
-                    }
-                    case PORTRAIT_UPSIDE_DOWN: {
-                        rotationValue += CameraUtils.DEGREE_ONE_EIGHTY;
-                        break;
-                    }
-                }
+
+                int rotationValue = getImageRotationValue();
+
                 if (rotationValue != 0) {
                     matrix.postRotate(rotationValue);
-                    mBitmap = Bitmap.createBitmap(mBitmap, 0, 0, mBitmap.getWidth(), mBitmap.getHeight(), matrix, false);
+                    mBitmap = Bitmap.createBitmap(mBitmap, 0, 0, mBitmap.getWidth(),
+                            mBitmap.getHeight(), matrix, false);
                 }
                 return true;
             }
@@ -315,6 +334,43 @@ public class Camera1Fragment extends Fragment {
                 mImagePreviewLayout.setVisibility(View.VISIBLE);
                 mCapturedImageView.setImageBitmap(mBitmap);
             }
+        }
+
+        private int getImageRotationValue() {
+            int rotationValue = 0;
+            //either the application is using the back camera
+            //if the application is using the front camera and it's in either portrait or upside portrait mode
+            //for application using front camera and orientation is left landscape. It works fine automatically.
+            if ((CameraUtils.mCurrentCameraId == Camera.CameraInfo.CAMERA_FACING_BACK) ||
+                    (CameraUtils.mCurrentCameraId == Camera.CameraInfo.CAMERA_FACING_FRONT &&
+                            (screenOrientation.ordinal() == CameraUtils.ScreenOrientation.PORTRAIT.ordinal() ||
+                                    screenOrientation.ordinal() == CameraUtils.ScreenOrientation.PORTRAIT_UPSIDE_DOWN.ordinal()))) {
+
+                //this is for reverse landscape for phones like Nexus 5X.
+                if (info.orientation == CameraUtils.DEGREE_TWO_SEVENTY) {
+                    rotationValue = -CameraUtils.DEGREE_NINETY;
+                } else {
+                    rotationValue = CameraUtils.DEGREE_NINETY;
+                }
+                switch (screenOrientation) {
+                    case LEFT_LANDSCAPE: {
+                        rotationValue -= CameraUtils.DEGREE_NINETY;
+                        break;
+                    }
+                    case RIGHT_LANDSCAPE: {
+                        rotationValue += CameraUtils.DEGREE_NINETY;
+                        break;
+                    }
+                    case PORTRAIT_UPSIDE_DOWN: {
+                        rotationValue += CameraUtils.DEGREE_ONE_EIGHTY;
+                        break;
+                    }
+                }
+            } else if (CameraUtils.mCurrentCameraId == Camera.CameraInfo.CAMERA_FACING_FRONT &&
+                    screenOrientation.ordinal() == CameraUtils.ScreenOrientation.RIGHT_LANDSCAPE.ordinal()) {
+                rotationValue += CameraUtils.DEGREE_ONE_EIGHTY;
+            }
+            return rotationValue;
         }
     }
 }
