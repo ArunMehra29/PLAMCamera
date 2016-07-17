@@ -8,6 +8,8 @@ import camera.plam.com.plamcamera.api1.Camera1Activity;
 
 public class CaptureImageActivity extends Activity {
 
+    private static final String LOG_TAG = CaptureImageActivity.class.getSimpleName();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

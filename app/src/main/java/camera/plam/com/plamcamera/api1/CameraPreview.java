@@ -121,7 +121,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         } else {
             // handle single touch events
             if (action == MotionEvent.ACTION_UP) {
-                handleFocus(event, params);
+                handleFocus(params);
             }
         }
         return true;
@@ -145,7 +145,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         mCamera.setParameters(params);
     }
 
-    public void handleFocus(MotionEvent event, Camera.Parameters params) {
+    public void handleFocus(Camera.Parameters params) {
 
         List<String> supportedFocusModes = params.getSupportedFocusModes();
         if (supportedFocusModes != null && supportedFocusModes.contains(Camera.Parameters.FOCUS_MODE_AUTO)) {

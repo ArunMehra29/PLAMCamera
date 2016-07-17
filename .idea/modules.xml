@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/PlamCamera.iml" filepath="$PROJECT_DIR$/PlamCamera.iml" />
+      <module fileurl="file://$PROJECT_DIR$/PLAMCamera.iml" filepath="$PROJECT_DIR$/PLAMCamera.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>
   </component>
