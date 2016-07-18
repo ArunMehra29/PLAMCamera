@@ -1,2 +1,0 @@
-# PLAMCamera
-Camera library android
