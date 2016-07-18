@@ -1,0 +1,8 @@
+<resources>
+
+    <!--margins-->
+    <dimen name="margin16">16dp</dimen>
+
+    <dimen name="button_height">48dp</dimen>
+    <dimen name="camera_action_wh">30dp</dimen>
+</resources>
