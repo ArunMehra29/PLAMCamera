@@ -561,11 +561,11 @@ public class Camera1Fragment extends Fragment implements GestureDetector.OnGestu
         @Override
         protected Boolean doInBackground(Void... params) {
 
-            mNextBitmap = Bitmap.createBitmap(mCurrentBitmap);
+            mNextBitmap = mCurrentBitmap.copy(Bitmap.Config.ARGB_8888, true);
             mNextBitmap = getGreyScaledBitmap(mNextBitmap);
             mNextFilter = mCurrentFilter.next();
             mBitmapCache.addBitmapCache(mNextFilter.name(), mNextBitmap);
-            mPreviousBitmap = Bitmap.createBitmap(mCurrentBitmap);
+            mPreviousBitmap = mCurrentBitmap.copy(Bitmap.Config.ARGB_8888, true);
             mPreviousBitmap = getTintedBitmap(mPreviousBitmap, Color.RED);
             mPreviousFilter = mCurrentFilter.previous();
             mBitmapCache.addBitmapCache(mPreviousFilter.name(), mPreviousBitmap);
