@@ -5,7 +5,6 @@ import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.Rect;
@@ -16,6 +15,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
+import android.util.Log;
 import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -32,8 +32,6 @@ import java.io.ByteArrayOutputStream;
 import plam.com.camera.R;
 import plam.com.camera.Utils.BitmapCache;
 import plam.com.camera.Utils.BitmapFilters;
-import plam.com.camera.Utils.CameraUtils;
-import plam.com.camera.Utils.GeneralUtils;
 import plam.com.camera.listener.ICameraIO;
 
 import static plam.com.camera.Utils.BitmapFilters.*;
@@ -54,9 +52,7 @@ public class Camera1Fragment extends Fragment implements GestureDetector.OnGestu
     private RelativeLayout mImagePreviewLayout;
     private RelativeLayout mCameraActionsLayout;
     private ImageButton mCameraFlashImageButton;
-    private ImageButton mCameraCaptureImageButton;
     private ImageButton mSwitchCameraImageButton;
-    private ImageButton mAcceptImageButton;
     private ImageView mCapturedImageView;
 
     private ICameraIO mCameraIOListener;
@@ -81,8 +77,7 @@ public class Camera1Fragment extends Fragment implements GestureDetector.OnGestu
     private boolean mIsFlingFired;
 
     public static Camera1Fragment getCamera1FragmentInstance() {
-        Camera1Fragment fragment = new Camera1Fragment();
-        return fragment;
+        return new Camera1Fragment();
     }
 
     @Override
@@ -124,24 +119,22 @@ public class Camera1Fragment extends Fragment implements GestureDetector.OnGestu
         //reference views
         mCameraPreviewContainer = (FrameLayout) view.findViewById(R.id.camera_preview_container);
         mCameraFlashImageButton = (ImageButton) view.findViewById(R.id.camera_flash_image_button);
-        mCameraCaptureImageButton = (ImageButton) view.findViewById(R.id.capture_camera_image_button);
         mSwitchCameraImageButton = (ImageButton) view.findViewById(R.id.switch_camera_image_button);
         mCapturedImageView = (ImageView) view.findViewById(R.id.captured_image_view);
         mCameraActionsLayout = (RelativeLayout) view.findViewById(R.id.camera_action_layout);
         mImagePreviewLayout = (RelativeLayout) view.findViewById(R.id.image_preview_layout);
         mImagePreviewLayout.setVisibility(View.GONE);
-        mAcceptImageButton = (ImageButton) view.findViewById(R.id.accept_image_button);
 
         //click listeners
         mCapturedImageView.setOnTouchListener(imageTouchListener);
         mCameraFlashImageButton.setOnClickListener(cameraFlashListener);
-        mCameraCaptureImageButton.setOnClickListener(captureImageListener);
         mSwitchCameraImageButton.setOnClickListener(switchCameraListener);
-        mAcceptImageButton.setOnClickListener(acceptCapturedImaged);
+        view.findViewById(R.id.capture_camera_image_button).setOnClickListener(captureImageListener);
+        view.findViewById(R.id.accept_image_button).setOnClickListener(acceptCapturedImaged);
 
         mGestureDetector = new GestureDetector(getActivity(), Camera1Fragment.this);
         mCurrentScrollDirection = ScrollDirection.NONE;
-        mCurrentFilter = Filters.NONE;
+        mCurrentFilter = Filters.NORMAL;
 
         mBitmapCache = BitmapCache.getInstance();
         mBitmapCache.initializeCache();
@@ -223,16 +216,28 @@ public class Camera1Fragment extends Fragment implements GestureDetector.OnGestu
             mCurrentBitmap = mNextBitmap;
             mCurrentFilter = mNextFilter;
             mNextFilter = mCurrentFilter.next();
+            Log.d(LOG_TAG, "next filter name " + mNextFilter.name());
             //note next bitmap can be null if not found in cache
             mNextBitmap = mBitmapCache.getBitmapCache(mNextFilter.name());
+            if (mNextBitmap != null) {
+                Log.d(LOG_TAG, "next filter index " + mNextFilter.ordinal() + " " + mNextFilter.name());
+            } else {
+                Log.d(LOG_TAG, "next bitmap IS NULL");
+            }
         } else {
             mNextBitmap = mCurrentBitmap;
             mNextFilter = mCurrentFilter;
             mCurrentFilter = mPreviousFilter;
             mCurrentBitmap = mPreviousBitmap;
             mPreviousFilter = mCurrentFilter.previous();
+            Log.d(LOG_TAG, "previous filter name " + mPreviousFilter.name());
             //note previous bitmap can be null if not found in cache
             mPreviousBitmap = mBitmapCache.getBitmapCache(mPreviousFilter.name());
+            if (mPreviousBitmap != null) {
+                Log.d(LOG_TAG, "previous filter index " + mPreviousFilter.ordinal() + " " + mPreviousFilter.name());
+            } else {
+                Log.d(LOG_TAG, "previous bitmap IS NULL");
+            }
         }
     }
 
@@ -296,7 +301,7 @@ public class Camera1Fragment extends Fragment implements GestureDetector.OnGestu
                 public void onPreviewFrame(byte[] data, Camera camera) {
                     if (null != data) {
                         loadCapturedImage(data, mCurrentOrientation);
-                        new LoadImageTask().
+                        new LoadOtherBitmaps().
                                 executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
                     } else {
                         restartCamera();
@@ -509,8 +514,8 @@ public class Camera1Fragment extends Fragment implements GestureDetector.OnGestu
                 mCurrentBitmap = Bitmap.createBitmap(mCurrentBitmap, 0, 0, mCurrentBitmap.getWidth(),
                         mCurrentBitmap.getHeight(), matrix, false);
             }
-            mCurrentFilter = Filters.NONE;
-            mBitmapCache.addBitmapCache(mCurrentFilter.name(), mCurrentBitmap);
+            mCurrentFilter = Filters.NORMAL;
+            mBitmapCache.addBitmapCache(mCurrentFilter.name(), mCurrentBitmap.copy(Bitmap.Config.ARGB_8888, true));
             mCameraPreviewContainer.setVisibility(View.GONE);
             mCameraActionsLayout.setVisibility(View.GONE);
             mImagePreviewLayout.setVisibility(View.VISIBLE);
@@ -556,25 +561,42 @@ public class Camera1Fragment extends Fragment implements GestureDetector.OnGestu
         return rotationValue;
     }
 
-    private class LoadImageTask extends AsyncTask<Void, Void, Boolean> {
+    private class LoadOtherBitmaps extends AsyncTask<Void, Void, Boolean> {
 
         @Override
         protected Boolean doInBackground(Void... params) {
 
             mNextBitmap = mCurrentBitmap.copy(Bitmap.Config.ARGB_8888, true);
-            mNextBitmap = getGreyScaledBitmap(mNextBitmap);
+
             mNextFilter = mCurrentFilter.next();
+            mNextBitmap = getBitmapOnFilterValue(mNextFilter, mNextBitmap);
             mBitmapCache.addBitmapCache(mNextFilter.name(), mNextBitmap);
             mPreviousBitmap = mCurrentBitmap.copy(Bitmap.Config.ARGB_8888, true);
-            mPreviousBitmap = getTintedBitmap(mPreviousBitmap, Color.RED);
             mPreviousFilter = mCurrentFilter.previous();
+            mPreviousBitmap = getBitmapOnFilterValue(mPreviousFilter, mPreviousBitmap);
             mBitmapCache.addBitmapCache(mPreviousFilter.name(), mPreviousBitmap);
             mResultBitmap = Bitmap.createBitmap(mCurrentBitmap.getWidth(), mCurrentBitmap.getHeight(), Bitmap.Config.ARGB_8888);
             mImageCanvas = new Canvas(mResultBitmap);
 
+            Bitmap currentBitmap = mCurrentBitmap;
+            BitmapFilters.Filters currentFilter = mCurrentFilter;
+            BitmapFilters.Filters looperFilter = currentFilter.next().next();
+
+            Log.d(LOG_TAG, "current filter " + currentFilter.name());
+            while(looperFilter.ordinal() != currentFilter.ordinal()) {
+                Log.d(LOG_TAG, "looper filter " + looperFilter.name());
+                Bitmap bitmap = mBitmapCache.getBitmapCache(looperFilter.name());
+                if (bitmap == null) {
+                    Log.d(LOG_TAG, "looper filter was NULL");
+                    bitmap = getBitmapOnFilterValue(looperFilter, currentBitmap.copy(Bitmap.Config.ARGB_8888, true));
+                    mBitmapCache.addBitmapCache(looperFilter.name(), bitmap);
+                } else {
+                    Log.d(LOG_TAG, "looper filter was NOT NULL");
+                }
+                looperFilter = looperFilter.next();
+            }
+
             return false;
         }
-
-
     }
 }
