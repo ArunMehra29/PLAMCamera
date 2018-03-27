@@ -5,6 +5,7 @@ import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.os.Bundle;
 import android.widget.FrameLayout;
+import android.widget.Toast;
 
 import plam.com.camera.R;
 import plam.com.camera.listener.ICameraIO;
@@ -43,6 +44,6 @@ public class Camera1Activity extends Activity implements ICameraIO {
 
     @Override
     public void onCameraOpenFailure() {
-        //TODO unable to open camera
+        Toast.makeText(Camera1Activity.this, "Unable to open camera", Toast.LENGTH_LONG).show();
     }
 }
