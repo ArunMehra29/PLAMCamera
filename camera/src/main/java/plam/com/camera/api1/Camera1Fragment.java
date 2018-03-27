@@ -192,12 +192,13 @@ public class Camera1Fragment extends Fragment implements GestureDetector.OnGestu
     public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
         switch (mCurrentScrollDirection) {
             case LEFT: {
-                overlayNextBitmap(mCurrentBitmap.getWidth() - 1);
+                overlayNextBitmap(mCurrentBitmap.getWidth());
                 mCapturedImageView.setImageDrawable(new BitmapDrawable(getResources(), mNextBitmap));
                 shuffleBitmap(true);
                 break;
             }
             case RIGHT: {
+                //width can't be 0
                 overlayPreviousBitmap(1);
                 mCapturedImageView.setImageDrawable(new BitmapDrawable(getResources(), mPreviousBitmap));
                 shuffleBitmap(false);
@@ -338,31 +339,42 @@ public class Camera1Fragment extends Fragment implements GestureDetector.OnGestu
     }
 
     private void overlayPreviousBitmap(int coordinateX) {
-        mImageCanvas.save();
 
-        Bitmap OSBitmap = Bitmap.createBitmap(mCurrentBitmap, coordinateX, 0, mCurrentBitmap.getWidth() - coordinateX, mCurrentBitmap.getHeight());
-        mImageCanvas.drawBitmap(OSBitmap, coordinateX, 0, null);
+        int widthValue = mCurrentBitmap.getWidth() - coordinateX;
 
-        Bitmap FSBitmap = Bitmap.createBitmap(mPreviousBitmap, 0, 0, coordinateX, mCurrentBitmap.getHeight());
-        mImageCanvas.drawBitmap(FSBitmap, 0, 0, null);
+        //added width value check to avoid illegalArgumentException crash
+        if (widthValue > 0) {
+            mImageCanvas.save();
 
-        mImageCanvas.restore();
+            Bitmap OSBitmap = Bitmap.createBitmap(mCurrentBitmap, coordinateX, 0, widthValue, mCurrentBitmap.getHeight());
+            mImageCanvas.drawBitmap(OSBitmap, coordinateX, 0, null);
 
-        mCapturedImageView.setImageDrawable(new BitmapDrawable(getResources(), mResultBitmap));
+            Bitmap FSBitmap = Bitmap.createBitmap(mPreviousBitmap, 0, 0, coordinateX, mCurrentBitmap.getHeight());
+            mImageCanvas.drawBitmap(FSBitmap, 0, 0, null);
+
+            mImageCanvas.restore();
+
+            mCapturedImageView.setImageDrawable(new BitmapDrawable(getResources(), mResultBitmap));
+        }
     }
 
     private void overlayNextBitmap(int coordinateX) {
-        mImageCanvas.save();
+        int widthValue = mCurrentBitmap.getWidth() - coordinateX;
 
-        Bitmap OSBitmap = Bitmap.createBitmap(mCurrentBitmap, 0, 0, coordinateX, mCurrentBitmap.getHeight());
-        mImageCanvas.drawBitmap(OSBitmap, 0, 0, null);
+        //added width value check to avoid illegalArgumentException crash
+        if (widthValue > 0) {
+            mImageCanvas.save();
 
-        Bitmap FSBitmap = Bitmap.createBitmap(mNextBitmap, coordinateX, 0, mCurrentBitmap.getWidth() - coordinateX, mCurrentBitmap.getHeight());
-        mImageCanvas.drawBitmap(FSBitmap, coordinateX, 0, null);
+            Bitmap OSBitmap = Bitmap.createBitmap(mCurrentBitmap, 0, 0, coordinateX, mCurrentBitmap.getHeight());
+            mImageCanvas.drawBitmap(OSBitmap, 0, 0, null);
 
-        mImageCanvas.restore();
+            Bitmap FSBitmap = Bitmap.createBitmap(mNextBitmap, coordinateX, 0, mCurrentBitmap.getWidth() - coordinateX, mCurrentBitmap.getHeight());
+            mImageCanvas.drawBitmap(FSBitmap, coordinateX, 0, null);
 
-        mCapturedImageView.setImageDrawable(new BitmapDrawable(getResources(), mResultBitmap));
+            mImageCanvas.restore();
+
+            mCapturedImageView.setImageDrawable(new BitmapDrawable(getResources(), mResultBitmap));
+        }
     }
 
     private void startBackCamera() {
