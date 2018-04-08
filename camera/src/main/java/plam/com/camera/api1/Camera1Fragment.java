@@ -13,6 +13,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.hardware.Camera;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
@@ -188,20 +189,50 @@ public class Camera1Fragment extends Fragment implements GestureDetector.OnGestu
     public void onLongPress(MotionEvent e) {
     }
 
+    private final int RUNNABLE_DELAY = 10;
+    private final int X_COORDINATE_DIFF = 30;
+
+    private Handler handler = new Handler();
+
+    final Runnable leftFlingRunnable = new Runnable() {
+        public void run() {
+            if (mTouchX > 0) {
+                overlayNextBitmap(mTouchX);
+                handler.postDelayed(this, RUNNABLE_DELAY);
+                mTouchX = mTouchX - X_COORDINATE_DIFF;
+            } else {
+                overlayNextBitmap(mCurrentBitmap.getWidth());
+                mCapturedImageView.setImageDrawable(new BitmapDrawable(getResources(), mNextBitmap));
+                shuffleBitmap(true);
+            }
+        }
+    };
+
+    final Runnable rightFlingRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (mTouchX < mCurrentBitmap.getWidth()) {
+                overlayPreviousBitmap(mTouchX);
+                mTouchX = mTouchX + X_COORDINATE_DIFF;
+                handler.postDelayed(this, RUNNABLE_DELAY);
+            } else {
+                overlayPreviousBitmap(1);
+                mCapturedImageView.setImageDrawable(new BitmapDrawable(getResources(), mPreviousBitmap));
+                shuffleBitmap(false);
+            }
+        }
+    };
+
     @Override
     public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
         switch (mCurrentScrollDirection) {
             case LEFT: {
-                overlayNextBitmap(mCurrentBitmap.getWidth());
-                mCapturedImageView.setImageDrawable(new BitmapDrawable(getResources(), mNextBitmap));
-                shuffleBitmap(true);
+                handler.postDelayed(leftFlingRunnable, RUNNABLE_DELAY);
                 break;
             }
             case RIGHT: {
                 //width can't be 0
-                overlayPreviousBitmap(1);
-                mCapturedImageView.setImageDrawable(new BitmapDrawable(getResources(), mPreviousBitmap));
-                shuffleBitmap(false);
+                handler.postDelayed(rightFlingRunnable, RUNNABLE_DELAY);
                 break;
             }
         }
@@ -595,7 +626,7 @@ public class Camera1Fragment extends Fragment implements GestureDetector.OnGestu
             BitmapFilters.Filters looperFilter = currentFilter.next().next();
 
             Log.d(LOG_TAG, "current filter " + currentFilter.name());
-            while(looperFilter.ordinal() != currentFilter.ordinal()) {
+            while (looperFilter.ordinal() != currentFilter.ordinal()) {
                 Log.d(LOG_TAG, "looper filter " + looperFilter.name());
                 Bitmap bitmap = mBitmapCache.getBitmapCache(looperFilter.name());
                 if (bitmap == null) {
